@@ -4,27 +4,29 @@
 #RUN npm install
 #EXPOSE 3000
 #CMD [ "npm","start" ]
-FROM ubuntu:bionic-20190612
+# base image: centos7
+FROM ubuntu:latest
 
-LABEL maintainer="sharath"
+# install dependencies to compile redis source code
+RUN ["yum" , "install" , "-y" ,"gcc","gcc-c++","net-tools","make"]
 
-ENV REDIS_VERSION=4.0.9 \
-    REDIS_USER=redis \
-    REDIS_DATA_DIR=/var/lib/redis \
-    REDIS_LOG_DIR=/var/log/redis
+# set workdir to /usr/local
+WORKDIR /usr/local
 
-RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install -y redis-server=5:${REDIS_VERSION}* \
- && sed 's/^bind /# bind /' -i /etc/redis/redis.conf \
- && sed 's/^logfile /# logfile /' -i /etc/redis/redis.conf \
- && sed 's/^daemonize yes/daemonize no/' -i /etc/redis/redis.conf \
- && sed 's/^protected-mode yes/protected-mode no/' -i /etc/redis/redis.conf \
- && sed 's/^# unixsocket /unixsocket /' -i /etc/redis/redis.conf \
- && sed 's/^# unixsocketperm 700/unixsocketperm 777/' -i /etc/redis/redis.conf \
- && rm -rf /var/lib/apt/lists/*
+# copy a file to workdir
+ADD redis-5.0.10.tar.gz .
 
-COPY entrypoint.sh /sbin/entrypoint.sh
-RUN chmod 755 /sbin/entrypoint.sh
+# reset workdir to compile redis
+WORKDIR /usr/local/redis-5.0.10/src
 
-EXPOSE 6379/tcp
-ENTRYPOINT ["/sbin/entrypoint.sh"]
+# install redis
+RUN make && make install
+
+# reset dir where redis is installed
+WORKDIR /usr/local/redis-5.0.10
+
+# expose a port
+EXPOSE 6379
+
+# run redis after container starts
+CMD ["redis-server"]
