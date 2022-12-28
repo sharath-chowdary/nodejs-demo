@@ -8,6 +8,6 @@ FROM ubuntu
 MAINTAINER sharath@gmail.com 
 
 RUN apt-get update 
-RUN apt-get install –y nginx 
+RUN apt-get install nginx 
 EXPOSE 80
 CMD [“echo”,”Image created”]
